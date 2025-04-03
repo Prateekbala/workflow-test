@@ -1,0 +1,100 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String    @id @default(cuid())
+  email     String    @unique
+  firstName String?
+  lastName  String?
+  password  String?
+  zaps      Zap[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Zap {
+  id          String    @id @default(cuid())
+  name        String
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  trigger     Trigger?
+  token       Token?
+  actions     Action[]
+  status      String    @default("draft") // draft, active, paused, error
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  zapRuns     ZapRun[]
+}
+
+model Token {
+  id           String    @id @default(cuid())
+  zapId        String    @unique
+  zap          Zap       @relation(fields: [zapId], references: [id])
+  provider     String    // e.g. "gmail"
+  accessToken  String    @db.Text
+  refreshToken String?   @db.Text
+  expiresAt    DateTime
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  @@index([zapId])
+}
+
+model Trigger {
+  id        String           @id @default(uuid())
+  zapId     String          @unique
+  triggerId String
+  metadata  Json            @default("{}")
+  type      AvailableTrigger @relation(fields: [triggerId], references: [id])
+  zap       Zap             @relation(fields: [zapId], references: [id])
+}
+
+model Action {
+  id           String          @id @default(uuid())
+  zapId        String
+  zap          Zap            @relation(fields: [zapId], references: [id])
+  actionId     String
+  metadata     Json           @default("{}")
+  type         AvailableAction @relation(fields: [actionId], references: [id])
+  sortingOrder Int            @default(0)
+
+  @@index([zapId])
+}
+
+model AvailableAction {
+  id      String   @id @default(uuid())
+  name    String
+  image   String
+  actions Action[]
+}
+
+model AvailableTrigger {
+  id       String    @id @default(uuid())
+  name     String
+  image    String
+  triggers Trigger[]
+}
+
+model ZapRun {
+  id           String         @id @default(uuid())
+  zapId        String
+  metadata     Json
+  zap          Zap           @relation(fields: [zapId], references: [id])
+  zapRunOutbox ZapRunOutbox?
+
+  @@index([zapId])
+}
+
+model ZapRunOutbox {
+  id       String @id @default(uuid())
+  zapRunId String @unique
+  zapRun   ZapRun @relation(fields: [zapRunId], references: [id])
+}
