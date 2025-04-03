@@ -77,7 +77,7 @@ export default function Home() {
             onClick={handleSignOut}
             className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600"
           >
-            Sign-out bye!!
+            Sign-out
           </button>
         </div>
       </nav>
